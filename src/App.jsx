@@ -781,17 +781,38 @@ export default function App() {
                   t={t}
                 />
 
-                {/* 離櫃總額 */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1.5px solid ${t.border}`, paddingTop: 16 }}>
-                  <span style={{ fontWeight: 700, color: t.textSub }}>當日離櫃需繳（含預繳）</span>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 28, fontWeight: 900, color: t.textMain }}>{fmt(calc.totalToday)}</div>
-                    {calc.advance > 0 && <div style={{ fontSize: 11, color: t.warning, fontWeight: 700 }}>含電信預繳 {fmt(calc.advance)}</div>}
+                {/* 離櫃總額 — 分列顯示 */}
+                <div style={{ borderTop: `1.5px solid ${t.border}`, paddingTop: 14 }}>
+                  {/* 分項明細 */}
+                  {!calc.isPure && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0' }}>
+                      <span style={{ fontSize: 13, color: t.textSub }}>硬體專案價</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: t.textMain, fontFamily: 'monospace' }}>{fmt(calc.hwFinal)}</span>
+                    </div>
+                  )}
+                  {calc.advance > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0' }}>
+                      <span style={{ fontSize: 13, color: t.textSub }}>
+                        電信預繳
+                        <span style={{ fontSize: 11, color: t.textMuted, marginLeft: 6 }}>（存入電信，逐月扣抵月租）</span>
+                      </span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: t.warning, fontFamily: 'monospace' }}>{fmt(calc.advance)}</span>
+                    </div>
+                  )}
+                  {/* 分隔線 */}
+                  {((!calc.isPure) || calc.advance > 0) && (
+                    <div style={{ borderTop: `1px dashed ${t.border}`, margin: '8px 0' }} />
+                  )}
+                  {/* 總計 */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700, color: t.textSub }}>當日離櫃總計</span>
+                    <span style={{ fontSize: 28, fontWeight: 900, color: t.textMain }}>{fmt(calc.totalToday)}</span>
                   </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, marginTop: 2 }}>
-                  <span style={{ fontSize: 12, color: t.textMuted }}>{plan.contractPeriod} 期合約總支出（含購機）</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: t.textSub, fontFamily: 'monospace' }}>{fmt(calc.tco)}</span>
+                  {/* 合約總支出 */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, marginTop: 4 }}>
+                    <span style={{ fontSize: 12, color: t.textMuted }}>{plan.contractPeriod} 期合約總支出（含購機）</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: t.textSub, fontFamily: 'monospace' }}>{fmt(calc.tco)}</span>
+                  </div>
                 </div>
               </Card>
             ) : (
