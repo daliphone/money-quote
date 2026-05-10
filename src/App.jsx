@@ -298,6 +298,7 @@ export default function App() {
   const [lastFetch,  setLastFetch]  = useState(null);
 
   const t = staffMode ? staffTheme : theme;
+  const { plans, hardware, rules, competitors, marketPlans } = appData;
 
   // ── API 層 ──────────────────────────────────────────────
   const api = useCallback(async (action, token = '') => {
@@ -417,7 +418,6 @@ export default function App() {
   }, []);
 
   // ── 核心資料 ────────────────────────────────────────────
-  const { plans, hardware, rules, competitors, marketPlans } = appData;
   const plan = plans.find(p => p.planId === planId);
 
   let phone;
