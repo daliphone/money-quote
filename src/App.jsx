@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 // ═══════════════════════════════════════════════════════════
 
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwtLeQmPA9TrV9xl1JZSHOmq8fgbeIfAMAxNrgoAexYEhagQXqBJK3lNJqt0gPw_KxPuQ/exec';
-const EXPECTED_GAS_VERSION = '1.9';
+const EXPECTED_GAS_VERSION = '2.0';
 
 // ═══════════════════════════════════════════════════════════
 //  工具函式
@@ -176,12 +176,16 @@ const ProfitRow = ({ label, value, color, t, large }) => (
 // ★ 話術參考區塊元件（v1.9 final）
 // 方向 A：一線人員話術自動顯示（自動載入）
 // 方向 B：AI 話術按鈕生成（點擊觸發）
-function ManieTalkPanel({ talk, templates, templatesLoading, talkLoading, onGenerate, t }) {
+const OBJECTION_OPTIONS = ['無', '預繳金', '合約期', '4G夠用', '要考慮', '收訊疑慮', '價格太高'];
+const AGE_OPTIONS       = ['全部', '年輕族', '年長族'];
+
+function ManieTalkPanel({ talk, templates, templatesLoading, talkLoading, onGenerate, t,
+                          objection, ageGroup, onObjectionChange, onAgeGroupChange }) {
   return (
     <div style={{ background: '#f0f9ff', border: `2px dashed ${t.primary}40`, borderRadius: t.radiusSm, padding: 16, marginBottom: 18 }}>
 
       {/* 標題列 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div style={{ fontSize: 12, fontWeight: 900, color: t.primary, display: 'flex', alignItems: 'center', gap: 6 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
           馬尼話術參考
@@ -192,6 +196,32 @@ function ManieTalkPanel({ talk, templates, templatesLoading, talkLoading, onGene
             <><svg style={{ animation: 'spin 1s linear infinite' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>生成中…</>
           ) : <>✨ Manie 話術參考</>}
         </button>
+      </div>
+
+      {/* 客戶輪廓選擇 */}
+      <div style={{ background: 'white', borderRadius: 8, padding: '8px 10px', marginBottom: 10, border: `1px solid ${t.primary}30` }}>
+        <div style={{ marginBottom: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', marginRight: 6 }}>客層</span>
+          <span style={{ display: 'inline-flex', gap: 4 }}>
+            {AGE_OPTIONS.map(g => (
+              <button key={g} onClick={() => onAgeGroupChange(g)}
+                style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, border: `1px solid ${ageGroup === g ? t.primary : '#e2e8f0'}`, background: ageGroup === g ? t.primaryBg : 'transparent', color: ageGroup === g ? t.primary : '#94a3b8', cursor: 'pointer', fontWeight: ageGroup === g ? 700 : 400 }}>
+                {g}
+              </button>
+            ))}
+          </span>
+        </div>
+        <div>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', marginRight: 6 }}>卡點</span>
+          <span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>
+            {OBJECTION_OPTIONS.map(o => (
+              <button key={o} onClick={() => onObjectionChange(o)}
+                style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, border: `1px solid ${objection === o ? (o === '無' ? t.primary : '#f59e0b') : '#e2e8f0'}`, background: objection === o ? (o === '無' ? t.primaryBg : '#fffbeb') : 'transparent', color: objection === o ? (o === '無' ? t.primary : '#b45309') : '#94a3b8', cursor: 'pointer', fontWeight: objection === o ? 700 : 400 }}>
+                {o}
+              </button>
+            ))}
+          </span>
+        </div>
       </div>
 
       {/* ── 方向 A：一線人員話術（自動載入，直接顯示）── */}
@@ -286,6 +316,10 @@ export default function App() {
   const [radarNet,       setRadarNet]       = useState('全部');
   const [isMobile,       setIsMobile]       = useState(window.innerWidth < 768);
 
+  // ★ 客戶輪廓（話術精準化）
+  const [objection,      setObjection]      = useState('無');
+  const [ageGroup,       setAgeGroup]       = useState('全部');
+
   // ★ 話術相關狀態
   const [generatedTalk,  setGeneratedTalk]  = useState('');
   const [talkLoading,    setTalkLoading]    = useState(false);
@@ -354,8 +388,13 @@ export default function App() {
     if (planId) document.getElementById(`plan-${planId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [planId]);
 
-  // ── 切換方案或手機時清空已生成的話術 ──────────────────
-  // ★ 選完方案後自動載入一線話術（方向 A）
+  // ── 切換方案或手機時重置客戶輪廓 ──────────────────────
+  useEffect(() => {
+    setObjection('無');
+    setAgeGroup('全部');
+  }, [planId, phoneId]);
+
+  // ── 選完方案後自動載入一線話術（依客戶輪廓即時更新）──
   useEffect(() => {
     setGeneratedTalk('');
     setTalkTemplates([]);
@@ -380,13 +419,14 @@ export default function App() {
             situation,
             operator:    currentPlan.operator,
             msrpMonthly: currentPlan.msrpMonthly,
+            objection,
+            ageGroup,
           }) || [];
         } catch (_) { result = []; }
 
         if (result.length > 0) {
           setTalkTemplates(result);
         } else {
-          // GAS 無資料時啟用內建話術模板
           const builtin = BUILTIN_TEMPLATES.filter(t => t.situation === situation);
           setTalkTemplates(builtin);
         }
@@ -398,7 +438,17 @@ export default function App() {
     };
 
     fetchTemplates();
-  }, [planId, phoneId, actionType, origMonthly, origPeriod, plans, apiWithParams]);
+  }, [planId, phoneId, actionType, origMonthly, origPeriod, plans, apiWithParams, objection, ageGroup]);
+
+  // ── 話術顯示時自動累加使用次數 ─────────────────────────
+  useEffect(() => {
+    if (talkTemplates.length === 0) return;
+    talkTemplates.forEach(t => {
+      if (t.rowIndex && t.author !== '馬尼話術庫') {
+        apiWithParams('increment_talk_use', { rowIndex: t.rowIndex }).catch(() => {});
+      }
+    });
+  }, [talkTemplates, apiWithParams]);
 
   // ── 後台登入 ────────────────────────────────────────────
   const handleStaffLogin = useCallback(async () => {
@@ -477,6 +527,8 @@ export default function App() {
         actionType,
         origMonthly:  origInputValid ? origMonthlyNum : '',
         origPeriod:   origInputValid ? origPeriodNum  : '',
+        objection,
+        ageGroup,
       });
       setGeneratedTalk(result.talk || '');
     } catch (err) {
@@ -779,6 +831,10 @@ export default function App() {
                   talkLoading={talkLoading}
                   onGenerate={handleGenerateTalk}
                   t={t}
+                  objection={objection}
+                  ageGroup={ageGroup}
+                  onObjectionChange={setObjection}
+                  onAgeGroupChange={setAgeGroup}
                 />
 
                 {/* 離櫃總額 — 分列顯示 */}
