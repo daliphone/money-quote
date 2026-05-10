@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 // ═══════════════════════════════════════════════════════════
 
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwtLeQmPA9TrV9xl1JZSHOmq8fgbeIfAMAxNrgoAexYEhagQXqBJK3lNJqt0gPw_KxPuQ/exec';
-const EXPECTED_GAS_VERSION = '2.0';
+const EXPECTED_GAS_VERSION = '4.5';
 
 // ═══════════════════════════════════════════════════════════
 //  工具函式
@@ -359,7 +359,8 @@ export default function App() {
     setLoading(true); setInitError(null);
     try {
       const [plans, hardware, competitors, marketPlans] = await Promise.all([
-        api('plans'), api('hardware'), api('competitors'), api('market_plans'),
+        api('plans'), api('hardware'), api('competitors'),
+        api('market_plans').catch(() => []),
       ]);
       if (plans && plans.length > 0) {
         const gasVer = plans[0]._gasVersion;
